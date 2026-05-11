@@ -1,0 +1,520 @@
+'use client';
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  LayoutDashboard, 
+  DollarSign, 
+  Search, 
+  Hash, 
+  AlertCircle, 
+  BarChart3, 
+  RefreshCw, 
+  RotateCcw, 
+  Calendar, 
+  CreditCard, 
+  User, 
+  ListFilter,
+  ArrowRightCircle,
+  Clock,
+  Filter
+} from 'lucide-react';
+
+// --- SHARED UTILS ---
+const parseVal = (v: any) => {
+  if (v === null || v === undefined) return 0;
+  const strValue = String(v);
+  const parsed = parseFloat(strValue.replace(/[^0-9.-]+/g, ""));
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+const ABM_ORDER = [
+  "Palak Chouhan", "Abhin Anilkumar Patel", "Akshay Rajaram Kushare", "Balu Laxmandhamane",
+  "Ishwar", "Nitin Valmik Date", "Vikrant", "Vishal", "Omkar", "Manikandan", "Jitendra",
+  "Abhishek Tiwari", "Sudhir KumarPavan", "Nagendra", "Sachin", "Nanda Kishore", "Central"
+];
+
+const sortABMs = (a: string, b: string) => {
+  const indexA = ABM_ORDER.indexOf(a);
+  const indexB = ABM_ORDER.indexOf(b);
+  if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+  if (indexA !== -1) return -1;
+  if (indexB !== -1) return 1;
+  return (a || '').localeCompare(b || '');
+};
+
+// --- VIEW 1: PERFORMANCE SUMMARY ---
+const OperationsSummary = ({ data }: { data: any[] }) => {
+  const [monthFilter, setMonthFilter] = useState('');
+  const [abmFilter, setAbmFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
+  const months = useMemo(() => [...new Set(data.map(r => r['GMV Month']))].filter(Boolean).sort(), [data]);
+  const abms = useMemo(() => [...new Set(data.map(r => r['Supply Owner_2']))].filter(Boolean).sort(sortABMs), [data]);
+  const categories = useMemo(() => [...new Set(data.map(r => r['SKU Category']))].filter(Boolean).sort(), [data]);
+
+  const filteredData = useMemo(() => {
+    return data.filter(r => {
+      const mMatch = !monthFilter || r['GMV Month'] === monthFilter;
+      const aMatch = !abmFilter || r['Supply Owner_2'] === abmFilter;
+      const cMatch = !categoryFilter || r['SKU Category'] === categoryFilter;
+      return mMatch && aMatch && cMatch;
+    });
+  }, [data, monthFilter, abmFilter, categoryFilter]);
+
+  const summaryStats = useMemo(() => {
+    return filteredData.reduce((acc: any, r: any) => {
+      const status = (r['Trade Status'] || '').toLowerCase().trim();
+      if (status === 'open') acc.open++;
+      if (status === 'closed') {
+        acc.closed++;
+        acc.gmv += parseVal(r['Sale value( Contract/GMV)']);
+        acc.margin += parseVal(r['Trade Margin']);
+      }
+      return acc;
+    }, { gmv: 0, margin: 0, closed: 0, open: 0 });
+  }, [filteredData]);
+
+  const tableRows = useMemo(() => {
+    const map: any = {};
+    filteredData.forEach(r => {
+      const key = `${r['Supply Owner_2']}||${r['SKU Category']}`;
+      if (!map[key]) {
+        map[key] = { abm: r['Supply Owner_2'], category: r['SKU Category'], open: 0, closed: 0, gmv: 0, margin: 0 };
+      }
+      const status = (r['Trade Status'] || '').toLowerCase().trim();
+      if (status === 'open') map[key].open++;
+      if (status === 'closed') {
+        map[key].closed++;
+        map[key].gmv += parseVal(r['Sale value( Contract/GMV)']);
+        map[key].margin += parseVal(r['Trade Margin']);
+      }
+    });
+    return Object.values(map).sort((a: any, b: any) => sortABMs(a.abm, b.abm) || b.gmv - a.gmv);
+  }, [filteredData]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex-1 min-w-[200px] space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Month</label>
+            <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All Months</option>
+              {months.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[200px] space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ABM</label>
+            <select value={abmFilter} onChange={e => setAbmFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All ABMs</option>
+              {abms.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[200px] space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SKU Category</label>
+            <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All Categories</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <button 
+            onClick={() => {setMonthFilter(''); setAbmFilter(''); setCategoryFilter('');}} 
+            className="p-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-colors"
+            title="Reset Filters"
+          >
+            <RotateCcw size={20} />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total GMV', val: `₹${(summaryStats.gmv / 100000).toFixed(2)}L`, color: 'bg-indigo-600' },
+          { label: 'Total Margin', val: `₹${(summaryStats.margin / 100000).toFixed(2)}L`, color: 'bg-emerald-600' },
+          { label: 'Margin %', val: `${summaryStats.gmv > 0 ? ((summaryStats.margin / summaryStats.gmv) * 100).toFixed(1) : '0'}%`, color: 'bg-purple-600' },
+          { label: 'Closed Trades', val: summaryStats.closed, color: 'bg-slate-800' }
+        ].map((s, i) => (
+          <div key={i} className={`${s.color} p-6 rounded-2xl text-white shadow-lg`}>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
+            <p className="text-2xl font-black">{s.val}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+              <tr>
+                <th className="px-6 py-4">ABM</th>
+                <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4 text-center">Open</th>
+                <th className="px-6 py-4 text-center">Closed</th>
+                <th className="px-6 py-4 text-right">GMV (L)</th>
+                <th className="px-6 py-4 text-right">Margin (L)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {tableRows.map((row: any, i: number) => (
+                <tr key={i} className="hover:bg-slate-50 text-xs">
+                  <td className="px-6 py-4 font-bold text-slate-700">{row.abm}</td>
+                  <td className="px-6 py-4 text-slate-500 font-medium">{row.category}</td>
+                  <td className="px-6 py-4 text-center font-mono font-bold text-amber-600">{row.open}</td>
+                  <td className="px-6 py-4 text-center font-mono font-bold text-indigo-600">{row.closed}</td>
+                  <td className="px-6 py-4 text-right font-mono">{(row.gmv / 100000).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-right font-mono">{(row.margin / 100000).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-slate-800 text-white font-bold border-t-2 border-slate-900">
+              <tr className="text-xs">
+                <td colSpan={2} className="px-6 py-4 uppercase tracking-widest font-black">Grand Total</td>
+                <td className="px-6 py-4 text-center font-mono text-amber-400">{summaryStats.open}</td>
+                <td className="px-6 py-4 text-center font-mono text-indigo-300">{summaryStats.closed}</td>
+                <td className="px-6 py-4 text-right font-mono">{(summaryStats.gmv / 100000).toFixed(2)}L</td>
+                <td className="px-6 py-4 text-right font-mono">{(summaryStats.margin / 100000).toFixed(2)}L</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- VIEW 2: TRADE LEVEL DETAILS ---
+const TradeDetails = ({ data }: { data: any[] }) => {
+  const [monthFilter, setMonthFilter] = useState('');
+  const [abmFilter, setAbmFilter] = useState('');
+  const [search, setSearch] = useState('');
+
+  const months = useMemo(() => [...new Set(data.map(r => r['GMV Month']))].filter(Boolean).sort(), [data]);
+  const abms = useMemo(() => [...new Set(data.map(r => r['Supply Owner_2']))].filter(Boolean).sort(sortABMs), [data]);
+
+  const filtered = useMemo(() => {
+    return data.filter(r => {
+      const mMatch = !monthFilter || r['GMV Month'] === monthFilter;
+      const aMatch = !abmFilter || r['Supply Owner_2'] === abmFilter;
+      const sMatch = !search || 
+        String(r['PO'] || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(r['Buyer Name'] || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(r['sellerName'] || '').toLowerCase().includes(search.toLowerCase());
+      
+      return mMatch && aMatch && sMatch;
+    });
+  }, [data, monthFilter, abmFilter, search]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">GMV Month</label>
+            <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All Months</option>
+              {months.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Supply Owner</label>
+            <select value={abmFilter} onChange={e => setAbmFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
+              <option value="">All ABMs</option>
+              {abms.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Global Search</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              <input type="text" placeholder="Search PO / Buyer / Seller" className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[1200px]">
+            <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <tr>
+                <th className="px-4 py-4">PO ID</th>
+                <th className="px-4 py-4">ABM</th>
+                <th className="px-4 py-4">Buyer</th>
+                <th className="px-4 py-4">Seller</th>
+                <th className="px-4 py-4">Mode</th>
+                <th className="px-4 py-4 text-right">Purchase</th>
+                <th className="px-4 py-4 text-right">Sale</th>
+                <th className="px-4 py-4 text-right">Margin</th>
+                <th className="px-4 py-4 text-center">Status</th>
+                <th className="px-4 py-4">Payment</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.slice(0, 200).map((row: any, i: number) => {
+                const status = (row['Trade Status'] || '').toLowerCase();
+                const paymentVal = row['Payment'] || '';
+                const isPaid = paymentVal.trim() !== '' && paymentVal.toLowerCase() !== 'pending';
+
+                return (
+                  <tr key={i} className="hover:bg-slate-50/80 transition-colors text-[11px]">
+                    <td className="px-4 py-4 font-mono font-bold text-indigo-600">#{row['PO']}</td>
+                    <td className="px-4 py-4 font-bold text-slate-600">{row['Supply Owner_2']}</td>
+                    <td className="px-4 py-4 text-slate-500 font-medium truncate max-w-[140px]">{row['Buyer Name']}</td>
+                    <td className="px-4 py-4 text-slate-500 font-medium truncate max-w-[140px]">{row['sellerName']}</td>
+                    <td className="px-4 py-4 uppercase font-black text-slate-400">{row['Order Mode']}</td>
+                    <td className="px-4 py-4 text-right font-mono">₹{parseVal(row['Seller Payable(1% - not for all cases)']).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-slate-700">₹{parseVal(row['Sale value( Contract/GMV)']).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-right font-mono font-bold text-emerald-600">₹{parseVal(row['Trade Margin']).toLocaleString()}</td>
+                    <td className="px-4 py-4 text-center">
+                      <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${
+                        status === 'closed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {row['Trade Status']}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      {isPaid ? (
+                        <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
+                          <DollarSign size={10} />
+                          <span className="truncate max-w-[100px]">{paymentVal}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 font-bold italic">Pending</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- VIEW 3: SUPPLIER PAYOUT ---
+const SupplierPayout = ({ data }: { data: any[] }) => {
+  const [poSearchId, setPoSearchId] = useState('');
+  const [payoutData, setPayoutData] = useState<any>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const handlePoSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const query = poSearchId.trim();
+    if (!query) return;
+
+    setHasSearched(true);
+    const masterRow = data.find(item => String(item['PO'] || '').trim() === query);
+    const supplierName = masterRow ? (masterRow['sellerName'] || 'Not Found') : 'Not Found';
+
+    const paymentEntries = data.filter(item => {
+      const paymentRefId = String(item['PO/SO ID'] || '').trim();
+      const amount = parseVal(item['Payment_Amount']);
+      return paymentRefId === query && amount > 0;
+    });
+
+    setPayoutData({
+      supplierName: supplierName,
+      entries: paymentEntries
+    });
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
+        <div className="mb-8">
+          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Payout Inquiry</h2>
+          <p className="text-sm text-slate-400 font-medium">Verify Supplier Name & Payment Records</p>
+        </div>
+
+        <form onSubmit={handlePoSearch} className="flex gap-3">
+          <div className="relative flex-grow">
+            <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="Enter PO ID" 
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 text-lg shadow-inner" 
+              value={poSearchId} 
+              onChange={e => setPoSearchId(e.target.value)} 
+            />
+          </div>
+          <button type="submit" className="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-black uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-2">
+            Search <ArrowRightCircle size={20}/>
+          </button>
+        </form>
+
+        {hasSearched && (payoutData ? (
+          <div className="mt-10 space-y-6">
+            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="bg-white p-3 rounded-xl shadow-sm text-indigo-600">
+                  <User size={24} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Mapped Supplier</p>
+                  <p className="text-xl font-black text-slate-800">{payoutData.supplierName}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matching Rows</p>
+                <p className="text-xl font-mono font-black text-indigo-600">{payoutData.entries.length}</p>
+              </div>
+            </div>
+
+            {payoutData.entries.length > 0 ? (
+              <div className="grid grid-cols-1 gap-4">
+                {payoutData.entries.map((entry: any, idx: number) => (
+                  <div key={idx} className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-indigo-300 transition-all shadow-sm">
+                    <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex justify-between items-center">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                         <Clock size={12} /> Payment Detail
+                      </span>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <DollarSign size={10} className="text-emerald-500"/> Amount
+                        </label>
+                        <p className="text-2xl font-black text-emerald-600">
+                          ₹{parseVal(entry['Payment_Amount']).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <Calendar size={10} className="text-indigo-500"/> Date
+                        </label>
+                        <p className="text-base font-bold text-slate-700">
+                          {entry['Payment_Date'] || 'N/A'}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <CreditCard size={10} className="text-amber-500"/> UTR
+                        </label>
+                        <p className="text-xs font-mono font-bold text-slate-500 bg-slate-50 p-2 rounded-lg break-all border border-slate-100">
+                          {entry['UTR_Number'] || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 bg-amber-50 border border-amber-100 rounded-2xl text-center">
+                <p className="text-amber-700 text-sm font-bold">Supplier name identified, but no matching payment rows found.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-8 p-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl text-center">
+            <AlertCircle size={40} className="mx-auto text-slate-300 mb-4"/>
+            <h4 className="text-slate-800 text-xl font-black uppercase tracking-tight">No Data Found</h4>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- MAIN APP ---
+export default function App() {
+  const [activeTab, setActiveTab] = useState('performance'); 
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRyVz_AMFqUPAk7w8-jSo1c0u1E8J-NGAecbFB17ZwZtnXbc2MC4QUqVehkOQBVSwKSRnShOsIna5rl/pub?output=csv";
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(csvUrl);
+        const csvText = await response.text();
+        const lines = csvText.split(/\r?\n/).filter(line => line.trim());
+        
+        const parseCSVLine = (line: string) => {
+          const result = [];
+          let cur = ''; let inQuotes = false;
+          for (let char of line) {
+            if (char === '"') inQuotes = !inQuotes;
+            else if (char === ',' && !inQuotes) { result.push(cur.trim()); cur = ''; }
+            else cur += char;
+          }
+          result.push(cur.trim());
+          return result;
+        };
+
+        const rawHeaders = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''));
+        
+        const jsonData = lines.slice(1).map(line => {
+          const values = parseCSVLine(line);
+          const obj: any = {};
+          rawHeaders.forEach((h, i) => {
+            const val = values[i] || '';
+            obj[h] = val;
+            
+            // Fixed mappings
+            if (i === 32) obj['PO'] = val; // AG
+            if (i === 14) obj['sellerName'] = val; // O
+            if (i === 66) obj['PO/SO ID'] = val; // BO
+            if (i === 78) obj['Payment_Amount'] = val; // CA
+            if (i === 75) obj['Payment_Date'] = val; // BX
+            if (i === 79) obj['UTR_Number'] = val; // CB
+          });
+          return obj;
+        });
+
+        setData(jsonData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <RefreshCw className="animate-spin text-indigo-600" size={32} />
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-[60] px-6 shadow-sm">
+        <div className="max-w-[1400px] mx-auto py-5 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-600 p-2 rounded-xl text-white">
+              <LayoutDashboard size={20} />
+            </div>
+            <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">Ops Hub</h1>
+          </div>
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            {[
+              { id: 'performance', label: 'Summary', icon: <BarChart3 size={14}/> },
+              { id: 'trades', label: 'Ledger', icon: <ListFilter size={14}/> },
+              { id: 'payout', label: 'Payouts', icon: <DollarSign size={14}/> }
+            ].map((tab) => (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-[1400px] mx-auto p-8">
+        {activeTab === 'performance' && <OperationsSummary data={data} />}
+        {activeTab === 'trades' && <TradeDetails data={data} />}
+        {activeTab === 'payout' && <SupplierPayout data={data} />}
+      </main>
+    </div>
+  );
+}
