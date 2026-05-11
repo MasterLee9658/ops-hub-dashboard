@@ -77,7 +77,7 @@ const OperationsSummary = ({ data }: { data: any[] }) => {
   const tableRows = useMemo(() => {
     const map: any = {};
     filteredData.forEach(r => {
-      const key = `${r['Supply Owner_2']}||${r['SKU Category']}`;
+      const key = `${r['Supply Owner_2']}||${r['SKU Categorys']}`;
       if (!map[key]) {
         map[key] = { abm: r['Supply Owner_2'], category: r['SKU Category'], open: 0, closed: 0, gmv: 0, margin: 0 };
       }
