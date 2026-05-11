@@ -3,30 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ops Hub | Management Dashboard</title>
-    <!-- Tailwind CSS -->
+    <title>Ops Hub | Cosmic Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React and ReactDOM -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .animate-spin-slow { animation: spin 3s linear infinite; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --nebula-bg: radial-gradient(circle at 20% 30%, rgba(76, 0, 255, 0.15) 0%, transparent 40%),
+                         radial-gradient(circle at 80% 70%, rgba(255, 0, 102, 0.15) 0%, transparent 40%),
+                         #05070a;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--nebula-bg);
+            background-attachment: fixed;
+            color: #e2e8f0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Animated Starfield */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle var(--duration) infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(99, 102, 241, 0.5);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+
+        .animate-spin-slow { animation: spin 4s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-slate-50">
+<body>
+    <div class="stars-container" id="stars"></div>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
-        // --- SHARED UTILS ---
+        // Generate dynamic background stars
+        const StarField = () => {
+            useEffect(() => {
+                const container = document.getElementById('stars');
+                for (let i = 0; i < 150; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    const size = Math.random() * 2 + 1 + 'px';
+                    star.style.width = size;
+                    star.style.height = size;
+                    star.style.left = Math.random() * 100 + '%';
+                    star.style.top = Math.random() * 100 + '%';
+                    star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                    container.appendChild(star);
+                }
+            }, []);
+            return null;
+        };
+
         const parseVal = (v) => {
             if (v === null || v === undefined) return 0;
             const strValue = String(v);
@@ -49,9 +132,8 @@
             return (a || '').localeCompare(b || '');
         };
 
-        // Icon Component Wrapper to handle Lucide in React
         const Icon = ({ name, size = 16, className = "" }) => {
-            const ref = React.useRef(null);
+            const ref = useRef(null);
             useEffect(() => {
                 if (window.lucide) {
                     window.lucide.createIcons({
@@ -63,7 +145,6 @@
             return <i data-lucide={name} ref={ref}></i>;
         };
 
-        // --- VIEW 1: PERFORMANCE SUMMARY ---
         const OperationsSummary = ({ data }) => {
             const [monthFilter, setMonthFilter] = useState('');
             const [abmFilter, setAbmFilter] = useState('');
@@ -82,7 +163,7 @@
                 });
             }, [data, monthFilter, abmFilter, categoryFilter]);
 
-            const summaryStats = useMemo(() => {
+            const stats = useMemo(() => {
                 return filteredData.reduce((acc, r) => {
                     const status = (r['Trade Status'] || '').toLowerCase().trim();
                     if (status === 'open') acc.open++;
@@ -95,13 +176,11 @@
                 }, { gmv: 0, margin: 0, closed: 0, open: 0 });
             }, [filteredData]);
 
-            const tableRows = useMemo(() => {
+            const rows = useMemo(() => {
                 const map = {};
                 filteredData.forEach(r => {
                     const key = `${r['Supply Owner_2']}||${r['SKU Category']}`;
-                    if (!map[key]) {
-                        map[key] = { abm: r['Supply Owner_2'], category: r['SKU Category'], open: 0, closed: 0, gmv: 0, margin: 0 };
-                    }
+                    if (!map[key]) map[key] = { abm: r['Supply Owner_2'], category: r['SKU Category'], open: 0, closed: 0, gmv: 0, margin: 0 };
                     const status = (r['Trade Status'] || '').toLowerCase().trim();
                     if (status === 'open') map[key].open++;
                     if (status === 'closed') {
@@ -115,33 +194,22 @@
 
             return (
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="glass-panel p-6 rounded-3xl">
                         <div className="flex flex-wrap gap-4 items-end">
-                            <div className="flex-1 min-w-[200px] space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Month</label>
-                                <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
-                                    <option value="">All Months</option>
-                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[200px] space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ABM</label>
-                                <select value={abmFilter} onChange={e => setAbmFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
-                                    <option value="">All ABMs</option>
-                                    {abms.map(a => <option key={a} value={a}>{a}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex-1 min-w-[200px] space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SKU Category</label>
-                                <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
-                                    <option value="">All Categories</option>
-                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            <button 
-                                onClick={() => {setMonthFilter(''); setAbmFilter(''); setCategoryFilter('');}} 
-                                className="p-3 bg-slate-100 text-slate-400 rounded-xl hover:bg-slate-200 transition-colors"
-                            >
+                            {[
+                                { label: 'Month', val: monthFilter, set: setMonthFilter, opts: months },
+                                { label: 'ABM', val: abmFilter, set: setAbmFilter, opts: abms },
+                                { label: 'Category', val: categoryFilter, set: setCategoryFilter, opts: categories }
+                            ].map((f, i) => (
+                                <div key={i} className="flex-1 min-w-[200px] space-y-2">
+                                    <label className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-widest ml-1">{f.label}</label>
+                                    <select value={f.val} onChange={e => f.set(e.target.value)} className="w-full p-3 glass-input rounded-xl text-sm font-semibold cursor-pointer">
+                                        <option value="" className="bg-slate-900 text-white">All {f.label}s</option>
+                                        {f.opts.map(o => <option key={o} value={o} className="bg-slate-900 text-white">{o}</option>)}
+                                    </select>
+                                </div>
+                            ))}
+                            <button onClick={() => {setMonthFilter(''); setAbmFilter(''); setCategoryFilter('');}} className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white border border-white/10">
                                 <Icon name="rotate-ccw" size={20} />
                             </button>
                         </div>
@@ -149,22 +217,22 @@
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {[
-                            { label: 'Total GMV', val: `₹${(summaryStats.gmv / 100000).toFixed(2)}L`, color: 'bg-indigo-600' },
-                            { label: 'Total Margin', val: `₹${(summaryStats.margin / 100000).toFixed(2)}L`, color: 'bg-emerald-600' },
-                            { label: 'Margin %', val: `${summaryStats.gmv > 0 ? ((summaryStats.margin / summaryStats.gmv) * 100).toFixed(1) : '0'}%`, color: 'bg-purple-600' },
-                            { label: 'Closed Trades', val: summaryStats.closed, color: 'bg-slate-800' }
+                            { label: 'Total GMV', val: `₹${(stats.gmv / 100000).toFixed(2)}L`, color: 'from-blue-600/40 to-indigo-600/40' },
+                            { label: 'Total Margin', val: `₹${(stats.margin / 100000).toFixed(2)}L`, color: 'from-emerald-600/40 to-teal-600/40' },
+                            { label: 'Margin %', val: `${stats.gmv > 0 ? ((stats.margin / stats.gmv) * 100).toFixed(1) : '0'}%`, color: 'from-purple-600/40 to-pink-600/40' },
+                            { label: 'Closed Trades', val: stats.closed, color: 'from-slate-700/40 to-slate-900/40' }
                         ].map((s, i) => (
-                            <div key={i} className={`${s.color} p-6 rounded-2xl text-white shadow-lg`}>
-                                <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
-                                <p className="text-2xl font-black">{s.val}</p>
+                            <div key={i} className={`glass-panel bg-gradient-to-br ${s.color} p-6 rounded-3xl`}>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">{s.label}</p>
+                                <p className="text-3xl font-extrabold text-white">{s.val}</p>
                             </div>
                         ))}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="glass-panel rounded-3xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                                <thead className="bg-white/5 text-[10px] font-black text-indigo-300 uppercase tracking-wider">
                                     <tr>
                                         <th className="px-6 py-4">ABM</th>
                                         <th className="px-6 py-4">Category</th>
@@ -174,25 +242,25 @@
                                         <th className="px-6 py-4 text-right">Margin (L)</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {tableRows.map((row, i) => (
-                                        <tr key={i} className="hover:bg-slate-50 text-xs">
-                                            <td className="px-6 py-4 font-bold text-slate-700">{row.abm}</td>
-                                            <td className="px-6 py-4 text-slate-500 font-medium">{row.category}</td>
-                                            <td className="px-6 py-4 text-center font-mono font-bold text-amber-600">{row.open}</td>
-                                            <td className="px-6 py-4 text-center font-mono font-bold text-indigo-600">{row.closed}</td>
-                                            <td className="px-6 py-4 text-right font-mono">{(row.gmv / 100000).toFixed(2)}</td>
-                                            <td className="px-6 py-4 text-right font-mono">{(row.margin / 100000).toFixed(2)}</td>
+                                <tbody className="divide-y divide-white/5">
+                                    {rows.map((row, i) => (
+                                        <tr key={i} className="hover:bg-white/5 transition-colors text-xs font-medium">
+                                            <td className="px-6 py-4 text-white font-semibold">{row.abm}</td>
+                                            <td className="px-6 py-4 text-slate-300">{row.category}</td>
+                                            <td className="px-6 py-4 text-center font-mono font-bold text-amber-400">{row.open}</td>
+                                            <td className="px-6 py-4 text-center font-mono font-bold text-indigo-400">{row.closed}</td>
+                                            <td className="px-6 py-4 text-right font-mono text-white">{(row.gmv / 100000).toFixed(2)}</td>
+                                            <td className="px-6 py-4 text-right font-mono text-emerald-400">{(row.margin / 100000).toFixed(2)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
-                                <tfoot className="bg-slate-800 text-white font-bold border-t-2 border-slate-900">
+                                <tfoot className="bg-indigo-900/40 text-white font-bold">
                                     <tr className="text-xs">
-                                        <td colSpan={2} className="px-6 py-4 uppercase tracking-widest font-black">Grand Total</td>
-                                        <td className="px-6 py-4 text-center font-mono text-amber-400">{summaryStats.open}</td>
-                                        <td className="px-6 py-4 text-center font-mono text-indigo-300">{summaryStats.closed}</td>
-                                        <td className="px-6 py-4 text-right font-mono">{(summaryStats.gmv / 100000).toFixed(2)}L</td>
-                                        <td className="px-6 py-4 text-right font-mono">{(summaryStats.margin / 100000).toFixed(2)}L</td>
+                                        <td colSpan={2} className="px-6 py-5 uppercase tracking-widest font-black">Universe Grand Total</td>
+                                        <td className="px-6 py-5 text-center font-mono text-amber-300">{stats.open}</td>
+                                        <td className="px-6 py-5 text-center font-mono text-indigo-200">{stats.closed}</td>
+                                        <td className="px-6 py-5 text-right font-mono text-white">{(stats.gmv / 100000).toFixed(2)}L</td>
+                                        <td className="px-6 py-5 text-right font-mono text-emerald-300">{(stats.margin / 100000).toFixed(2)}L</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -202,7 +270,6 @@
             );
         };
 
-        // --- VIEW 2: TRADE LEVEL DETAILS ---
         const TradeDetails = ({ data }) => {
             const [monthFilter, setMonthFilter] = useState('');
             const [abmFilter, setAbmFilter] = useState('');
@@ -219,90 +286,77 @@
                         String(r['PO'] || '').toLowerCase().includes(search.toLowerCase()) ||
                         String(r['Buyer Name'] || '').toLowerCase().includes(search.toLowerCase()) ||
                         String(r['sellerName'] || '').toLowerCase().includes(search.toLowerCase());
-                    
                     return mMatch && aMatch && sMatch;
                 });
             }, [data, monthFilter, abmFilter, search]);
 
             return (
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">GMV Month</label>
-                                <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
-                                    <option value="">All Months</option>
-                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Supply Owner</label>
-                                <select value={abmFilter} onChange={e => setAbmFilter(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none">
-                                    <option value="">All ABMs</option>
-                                    {abms.map(a => <option key={a} value={a}>{a}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Global Search</label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">
-                                        <Icon name="search" size={16} />
-                                    </div>
-                                    <input type="text" placeholder="Search PO / Buyer / Seller" className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none" value={search} onChange={e => setSearch(e.target.value)} />
+                    <div className="glass-panel p-6 rounded-3xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest ml-1">GMV Month</label>
+                            <select value={monthFilter} onChange={e => setMonthFilter(e.target.value)} className="w-full p-3 glass-input rounded-xl text-sm font-semibold">
+                                <option value="" className="bg-slate-900">All Months</option>
+                                {months.map(m => <option key={m} value={m} className="bg-slate-900">{m}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest ml-1">Supply Owner</label>
+                            <select value={abmFilter} onChange={e => setAbmFilter(e.target.value)} className="w-full p-3 glass-input rounded-xl text-sm font-semibold">
+                                <option value="" className="bg-slate-900">All ABMs</option>
+                                {abms.map(a => <option key={a} value={a} className="bg-slate-900">{a}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-indigo-300 uppercase tracking-widest ml-1">Search Multiverse</label>
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-300/50">
+                                    <Icon name="search" size={16} />
                                 </div>
+                                <input type="text" placeholder="PO / Buyer / Seller" className="w-full pl-10 pr-3 py-3 glass-input rounded-xl text-sm font-semibold" value={search} onChange={e => setSearch(e.target.value)} />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="glass-panel rounded-3xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[1200px]">
-                                <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <thead className="bg-white/5 text-[10px] font-black text-indigo-300 uppercase tracking-widest">
                                     <tr>
-                                        <th className="px-4 py-4">PO ID</th>
-                                        <th className="px-4 py-4">ABM</th>
-                                        <th className="px-4 py-4">Buyer</th>
-                                        <th className="px-4 py-4">Seller</th>
-                                        <th className="px-4 py-4">Mode</th>
-                                        <th className="px-4 py-4 text-right">Purchase</th>
-                                        <th className="px-4 py-4 text-right">Sale</th>
-                                        <th className="px-4 py-4 text-right">Margin</th>
-                                        <th className="px-4 py-4 text-center">Status</th>
-                                        <th className="px-4 py-4">Payment</th>
+                                        <th className="px-4 py-5">PO ID</th>
+                                        <th className="px-4 py-5">ABM</th>
+                                        <th className="px-4 py-5">Buyer</th>
+                                        <th className="px-4 py-5">Seller</th>
+                                        <th className="px-4 py-5 text-right">Sale (GMV)</th>
+                                        <th className="px-4 py-5 text-right">Margin</th>
+                                        <th className="px-4 py-5 text-center">Status</th>
+                                        <th className="px-4 py-5">Payment</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100">
+                                <tbody className="divide-y divide-white/5">
                                     {filtered.slice(0, 200).map((row, i) => {
                                         const status = (row['Trade Status'] || '').toLowerCase();
-                                        const paymentVal = row['Payment'] || '';
-                                        const isPaid = paymentVal.trim() !== '' && paymentVal.toLowerCase() !== 'pending';
-
+                                        const isClosed = status === 'closed';
                                         return (
-                                            <tr key={i} className="hover:bg-slate-50/80 transition-colors text-[11px]">
-                                                <td className="px-4 py-4 font-mono font-bold text-indigo-600">#{row['PO']}</td>
-                                                <td className="px-4 py-4 font-bold text-slate-600">{row['Supply Owner_2']}</td>
-                                                <td className="px-4 py-4 text-slate-500 font-medium truncate max-w-[140px]">{row['Buyer Name']}</td>
-                                                <td className="px-4 py-4 text-slate-500 font-medium truncate max-w-[140px]">{row['sellerName']}</td>
-                                                <td className="px-4 py-4 uppercase font-black text-slate-400">{row['Order Mode']}</td>
-                                                <td className="px-4 py-4 text-right font-mono">₹{parseVal(row['Seller Payable(1% - not for all cases)']).toLocaleString()}</td>
-                                                <td className="px-4 py-4 text-right font-mono font-bold text-slate-700">₹{parseVal(row['Sale value( Contract/GMV)']).toLocaleString()}</td>
-                                                <td className="px-4 py-4 text-right font-mono font-bold text-emerald-600">₹{parseVal(row['Trade Margin']).toLocaleString()}</td>
+                                            <tr key={i} className="hover:bg-white/5 transition-colors text-[11px] font-medium">
+                                                <td className="px-4 py-4 font-mono font-bold text-indigo-400">#{row['PO']}</td>
+                                                <td className="px-4 py-4 text-white">{row['Supply Owner_2']}</td>
+                                                <td className="px-4 py-4 text-slate-300 truncate max-w-[140px]">{row['Buyer Name']}</td>
+                                                <td className="px-4 py-4 text-slate-300 truncate max-w-[140px]">{row['sellerName']}</td>
+                                                <td className="px-4 py-4 text-right font-mono text-white">₹{parseVal(row['Sale value( Contract/GMV)']).toLocaleString()}</td>
+                                                <td className="px-4 py-4 text-right font-mono font-bold text-emerald-400">₹{parseVal(row['Trade Margin']).toLocaleString()}</td>
                                                 <td className="px-4 py-4 text-center">
-                                                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${
-                                                        status === 'closed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                                                    <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-tight ${
+                                                        isClosed ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
                                                     }`}>
                                                         {row['Trade Status']}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-4">
-                                                    {isPaid ? (
-                                                        <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">
-                                                            <Icon name="dollar-sign" size={10} />
-                                                            <span className="truncate max-w-[100px]">{paymentVal}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-slate-300 font-bold italic">Pending</span>
-                                                    )}
+                                                    <div className="flex items-center gap-2 text-indigo-200">
+                                                        <Icon name="credit-card" size={12} className="opacity-50" />
+                                                        <span className="truncate max-w-[120px]">{row['Payment'] || 'N/A'}</span>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -315,7 +369,6 @@
             );
         };
 
-        // --- VIEW 3: SUPPLIER PAYOUT ---
         const SupplierPayout = ({ data }) => {
             const [poSearchId, setPoSearchId] = useState('');
             const [payoutData, setPayoutData] = useState(null);
@@ -325,117 +378,93 @@
                 if (e) e.preventDefault();
                 const query = poSearchId.trim();
                 if (!query) return;
-
                 setHasSearched(true);
                 const masterRow = data.find(item => String(item['PO'] || '').trim() === query);
-                const supplierName = masterRow ? (masterRow['sellerName'] || 'Not Found') : 'Not Found';
-
-                const paymentEntries = data.filter(item => {
-                    const paymentRefId = String(item['PO/SO ID'] || '').trim();
-                    const amount = parseVal(item['Payment_Amount']);
-                    return paymentRefId === query && amount > 0;
-                });
-
+                const paymentEntries = data.filter(item => String(item['PO/SO ID'] || '').trim() === query && parseVal(item['Payment_Amount']) > 0);
                 setPayoutData({
-                    supplierName: supplierName,
+                    supplierName: masterRow ? masterRow['sellerName'] : 'Not Found',
                     entries: paymentEntries
                 });
             };
 
             return (
-                <div className="max-w-4xl mx-auto space-y-6">
-                    <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-                        <div className="mb-8">
-                            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Payout Inquiry</h2>
-                            <p className="text-sm text-slate-400 font-medium">Verify Supplier Name & Payment Records</p>
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <div className="glass-panel p-10 rounded-[2.5rem] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-10">
+                            <Icon name="rocket" size={120} />
+                        </div>
+                        <div className="mb-10">
+                            <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Hyper-Payout Inquiry</h2>
+                            <p className="text-indigo-300 font-medium">Verify supplier credentials and transaction velocity</p>
                         </div>
 
-                        <form onSubmit={handlePoSearch} className="flex gap-3">
+                        <form onSubmit={handlePoSearch} className="flex gap-4">
                             <div className="relative flex-grow">
-                                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400">
+                                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-indigo-400">
                                     <Icon name="hash" size={20} />
                                 </div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Enter PO ID" 
-                                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-slate-700 text-lg shadow-inner" 
-                                    value={poSearchId} 
-                                    onChange={e => setPoSearchId(e.target.value)} 
-                                />
+                                <input type="text" placeholder="Enter PO ID (e.g. 12345)" className="w-full pl-14 pr-6 py-5 glass-input rounded-2xl text-xl font-bold shadow-2xl" value={poSearchId} onChange={e => setPoSearchId(e.target.value)} />
                             </div>
-                            <button type="submit" className="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-black uppercase tracking-wider hover:bg-indigo-700 transition-all shadow-lg active:scale-95 flex items-center gap-2">
-                                Search <Icon name="arrow-right-circle" size={20}/>
+                            <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-lg flex items-center gap-3">
+                                Pulse <Icon name="zap" size={20}/>
                             </button>
                         </form>
 
                         {hasSearched && (payoutData ? (
-                            <div className="mt-10 space-y-6">
-                                <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl flex justify-between items-center">
-                                    <div className="flex items-center gap-4">
-                                        <div className="bg-white p-3 rounded-xl shadow-sm text-indigo-600">
-                                            <Icon name="user" size={24} />
+                            <div className="mt-12 space-y-6">
+                                <div className="glass-panel bg-white/5 p-8 rounded-3xl flex justify-between items-center border-indigo-500/30">
+                                    <div className="flex items-center gap-6">
+                                        <div className="bg-indigo-500/20 p-4 rounded-2xl text-indigo-300">
+                                            <Icon name="user" size={32} />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Mapped Supplier</p>
-                                            <p className="text-xl font-black text-slate-800">{payoutData.supplierName}</p>
+                                            <p className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">Supplier Node</p>
+                                            <p className="text-2xl font-black text-white">{payoutData.supplierName}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matching Rows</p>
-                                        <p className="text-xl font-mono font-black text-indigo-600">{payoutData.entries.length}</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Streams</p>
+                                        <p className="text-3xl font-mono font-black text-indigo-400">{payoutData.entries.length}</p>
                                     </div>
                                 </div>
 
                                 {payoutData.entries.length > 0 ? (
                                     <div className="grid grid-cols-1 gap-4">
                                         {payoutData.entries.map((entry, idx) => (
-                                            <div key={idx} className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-indigo-300 transition-all shadow-sm">
-                                                <div className="bg-slate-50 px-6 py-3 border-b border-slate-100 flex justify-between items-center">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                         <Icon name="clock" size={12} /> Payment Detail
-                                                    </span>
-                                                </div>
-                                                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                            <Icon name="dollar-sign" size={10} className="text-emerald-500"/> Amount
+                                            <div key={idx} className="glass-panel bg-white/5 rounded-3xl p-6 hover:bg-white/10 transition-all border-l-4 border-l-emerald-500">
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                            <Icon name="dollar-sign" size={12} className="text-emerald-500"/> Payout Amount
                                                         </label>
-                                                        <p className="text-2xl font-black text-emerald-600">
-                                                            ₹{parseVal(entry['Payment_Amount']).toLocaleString()}
-                                                        </p>
+                                                        <p className="text-2xl font-black text-emerald-400">₹{parseVal(entry['Payment_Amount']).toLocaleString()}</p>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                            <Icon name="calendar" size={10} className="text-indigo-500"/> Date
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                            <Icon name="calendar" size={12} className="text-indigo-400"/> Release Date
                                                         </label>
-                                                        <p className="text-base font-bold text-slate-700">
-                                                            {entry['Payment_Date'] || 'N/A'}
-                                                        </p>
+                                                        <p className="text-lg font-bold text-white">{entry['Payment_Date'] || 'Unknown'}</p>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                                            <Icon name="credit-card" size={10} className="text-amber-500"/> UTR
+                                                    <div>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                                            <Icon name="shield-check" size={12} className="text-blue-400"/> UTR Fingerprint
                                                         </label>
-                                                        <p className="text-xs font-mono font-bold text-slate-500 bg-slate-50 p-2 rounded-lg break-all border border-slate-100">
-                                                            {entry['UTR_Number'] || 'N/A'}
-                                                        </p>
+                                                        <p className="text-xs font-mono font-bold text-indigo-200 bg-white/5 p-2 rounded-lg break-all">{entry['UTR_Number'] || 'PENDING'}</p>
                                                     </div>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="p-8 bg-amber-50 border border-amber-100 rounded-2xl text-center">
-                                        <p className="text-amber-700 text-sm font-bold">Supplier name identified, but no matching payment rows found.</p>
+                                    <div className="p-12 glass-panel bg-amber-500/10 border-amber-500/30 rounded-3xl text-center">
+                                        <p className="text-amber-300 font-bold">Node identified but zero payment packets found in current stream.</p>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         ) : (
-                            <div className="mt-8 p-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl text-center">
-                                <div className="mx-auto text-slate-300 mb-4 flex justify-center">
-                                    <Icon name="alert-circle" size={40} />
-                                </div>
-                                <h4 className="text-slate-800 text-xl font-black uppercase tracking-tight">No Data Found</h4>
+                            <div className="mt-12 p-20 glass-panel bg-white/5 rounded-[2.5rem] text-center opacity-30">
+                                <Icon name="telescope" size={48} className="mx-auto mb-4 text-indigo-300" />
+                                <h4 className="text-white text-xl font-black uppercase tracking-widest">Scanning Galaxy...</h4>
                             </div>
                         ))}
                     </div>
@@ -443,7 +472,6 @@
             );
         };
 
-        // --- MAIN APP ---
         function App() {
             const [activeTab, setActiveTab] = useState('performance'); 
             const [data, setData] = useState([]);
@@ -471,28 +499,24 @@
                         };
 
                         const rawHeaders = parseCSVLine(lines[0]).map(h => h.replace(/"/g, ''));
-                        
                         const jsonData = lines.slice(1).map(line => {
                             const values = parseCSVLine(line);
                             const obj = {};
                             rawHeaders.forEach((h, i) => {
                                 const val = values[i] || '';
                                 obj[h] = val;
-                                
-                                if (i === 32) obj['PO'] = val; // AG
-                                if (i === 14) obj['sellerName'] = val; // O
-                                if (i === 66) obj['PO/SO ID'] = val; // BO
-                                if (i === 78) obj['Payment_Amount'] = val; // CA
-                                if (i === 75) obj['Payment_Date'] = val; // BX
-                                if (i === 79) obj['UTR_Number'] = val; // CB
+                                if (i === 32) obj['PO'] = val;
+                                if (i === 14) obj['sellerName'] = val;
+                                if (i === 66) obj['PO/SO ID'] = val;
+                                if (i === 78) obj['Payment_Amount'] = val;
+                                if (i === 75) obj['Payment_Date'] = val;
+                                if (i === 79) obj['UTR_Number'] = val;
                             });
                             return obj;
                         });
-
                         setData(jsonData);
                         setLoading(false);
                     } catch (err) {
-                        console.error("Fetch error:", err);
                         setLoading(false);
                     }
                 };
@@ -500,33 +524,37 @@
             }, []);
 
             if (loading) return (
-                <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                    <div className="animate-spin-slow text-indigo-600">
-                        <Icon name="refresh-cw" size={32} />
+                <div className="min-h-screen flex items-center justify-center">
+                    <div className="animate-spin-slow text-indigo-400">
+                        <Icon name="refresh-cw" size={48} />
                     </div>
                 </div>
             );
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-20 font-sans">
-                    <nav className="bg-white border-b border-slate-200 sticky top-0 z-[60] px-6 shadow-sm">
-                        <div className="max-w-[1400px] mx-auto py-5 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-indigo-600 p-2 rounded-xl text-white">
-                                    <Icon name="layout-dashboard" size={20} />
+                <div className="min-h-screen pb-20">
+                    <StarField />
+                    <nav className="glass-panel border-0 border-b border-white/10 sticky top-0 z-[60] px-6">
+                        <div className="max-w-[1400px] mx-auto py-5 flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-gradient-to-tr from-indigo-600 to-purple-600 p-3 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
+                                    <Icon name="orbit" size={24} />
                                 </div>
-                                <h1 className="text-lg font-black text-slate-900 uppercase tracking-tight">Ops Hub</h1>
+                                <div>
+                                    <h1 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">Ops Galaxy</h1>
+                                    <p className="text-[9px] font-bold text-indigo-300 uppercase tracking-widest mt-1 opacity-70">Hyper-Scale Logistics</p>
+                                </div>
                             </div>
-                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                            <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md">
                                 {[
                                     { id: 'performance', label: 'Summary', icon: 'bar-chart-3' },
                                     { id: 'trades', label: 'Ledger', icon: 'list-filter' },
-                                    { id: 'payout', label: 'Payouts', icon: 'dollar-sign' }
+                                    { id: 'payout', label: 'Payouts', icon: 'zap' }
                                 ].map((tab) => (
                                     <button 
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        className={`flex items-center gap-2 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/40' : 'text-slate-400 hover:text-indigo-200'}`}
                                     >
                                         <Icon name={tab.icon} size={14} /> {tab.label}
                                     </button>
@@ -535,7 +563,7 @@
                         </div>
                     </nav>
 
-                    <main className="max-w-[1400px] mx-auto p-8">
+                    <main className="max-w-[1400px] mx-auto p-8 animate-in fade-in duration-700">
                         {activeTab === 'performance' && <OperationsSummary data={data} />}
                         {activeTab === 'trades' && <TradeDetails data={data} />}
                         {activeTab === 'payout' && <SupplierPayout data={data} />}
