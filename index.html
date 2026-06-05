@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ops Hub - Dashboard</title>
+    <title>Ops Hub - Secure Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,40 +21,97 @@
             to { transform: translateX(0); }
         }
 
-        /* Custom scrollbar */
+        /* Custom premium scrollbars */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen text-slate-900">
+<body class="bg-slate-50 min-h-screen text-slate-900 selection:bg-indigo-100">
 
-    <div id="app">
-        <!-- Loading State -->
+    <!-- Auth / Login Gate Screen -->
+    <div id="auth-gate" class="fixed inset-0 flex items-center justify-center bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 z-[300] px-4">
+        <div class="w-full max-w-lg bg-white/10 backdrop-blur-md rounded-3xl p-8 md:p-10 border border-white/10 shadow-2xl relative overflow-hidden">
+            <!-- Decorative Glow Effects -->
+            <div class="absolute -top-16 -left-16 w-44 h-44 bg-indigo-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-16 -right-16 w-44 h-44 bg-purple-500/20 rounded-full blur-3xl"></div>
+
+            <div class="flex flex-col items-center mb-6 relative z-10">
+                <div class="bg-indigo-600 p-4 rounded-2xl text-white shadow-xl shadow-indigo-500/20 mb-4 animate-bounce">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-3xl font-black text-white uppercase tracking-tight text-center">Ops Hub Portal</h2>
+                <p class="text-[10px] text-indigo-200 mt-1 uppercase tracking-widest font-black font-mono">Ninjacart Authentication Gateway</p>
+            </div>
+
+            <form id="login-form" class="space-y-4 relative z-10">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-indigo-200 uppercase tracking-widest block ml-1">Ninjacart Email ID</label>
+                    <div class="relative">
+                        <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4.5 h-4.5"></i>
+                        <input id="login-username" type="email" required placeholder="name@ninjacart.com" 
+                            class="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none font-semibold text-white placeholder-slate-400 text-sm focus:border-indigo-500 focus:bg-white/15 transition-all">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-black text-indigo-200 uppercase tracking-widest block ml-1">Secure Passcode</label>
+                    <div class="relative">
+                        <i data-lucide="key-round" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4.5 h-4.5"></i>
+                        <input id="login-password" type="password" required placeholder="Enter passcode" 
+                            class="w-full pl-11 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-2xl outline-none font-semibold text-white placeholder-slate-400 text-sm focus:border-indigo-500 focus:bg-white/15 transition-all">
+                    </div>
+                </div>
+
+                <div id="auth-error" class="hidden text-rose-400 text-xs font-bold text-center bg-rose-500/10 py-3 px-4 rounded-xl border border-rose-500/20">
+                    Access Denied: Invalid Credentials!
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] transition-all text-white rounded-2xl font-black uppercase tracking-wider text-xs shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+                    Verify Identity & Enter <i data-lucide="log-in" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App Wrap (Hidden until authorized) -->
+    <div id="app" class="hidden">
+        <!-- Loading State Spinner -->
         <div id="loading-screen" class="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 z-[200]">
             <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
             <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading Intelligence...</p>
         </div>
 
-        <!-- Navigation -->
+        <!-- Navigation Bar -->
         <nav class="bg-white border-b border-slate-200 sticky top-0 z-[60] px-6 shadow-sm">
             <div class="max-w-[1400px] mx-auto py-4 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="flex items-center gap-3">
-                    <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-indigo-200 shadow-lg">
+                    <div class="bg-indigo-600 p-2.5 rounded-2xl text-white shadow-indigo-200 shadow-xl">
                         <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                     </div>
-                    <h1 class="text-lg font-black text-slate-900 uppercase tracking-tight">Ops Hub</h1>
+                    <div>
+                        <h1 class="text-xl font-black text-slate-900 uppercase tracking-tight">Ops Hub</h1>
+                        <span class="text-[9px] font-bold text-indigo-600 uppercase tracking-wider block -mt-1 font-mono" id="user-role-tag">Loading Profile...</span>
+                    </div>
                 </div>
-                <div class="flex bg-slate-100 p-1 rounded-xl" id="tab-controls">
-                    <button data-tab="performance" class="tab-btn flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-white text-indigo-600 shadow-sm">
-                        <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Summary
-                    </button>
-                    <button data-tab="trades" class="tab-btn flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
-                        <i data-lucide="list-filter" class="w-3.5 h-3.5"></i> Ledger
-                    </button>
-                    <button data-tab="payout" class="tab-btn flex items-center gap-2 px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
-                        <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Payouts
+
+                <div class="flex items-center gap-4">
+                    <div class="flex bg-slate-100 p-1 rounded-xl" id="tab-controls">
+                        <button data-tab="performance" class="tab-btn flex items-center gap-2 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-white text-indigo-600 shadow-sm">
+                            <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Summary
+                        </button>
+                        <button data-tab="trades" class="tab-btn flex items-center gap-2 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
+                            <i data-lucide="list-filter" class="w-3.5 h-3.5"></i> Ledger
+                        </button>
+                        <button data-tab="payout" class="tab-btn flex items-center gap-2 px-6 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
+                            <i data-lucide="dollar-sign" class="w-3.5 h-3.5"></i> Payouts
+                        </button>
+                    </div>
+
+                    <!-- Log Out Button -->
+                    <button id="logout-btn" class="flex items-center justify-center p-2.5 text-slate-400 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 rounded-xl transition-all" title="Logout">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
                     </button>
                 </div>
             </div>
@@ -62,6 +119,7 @@
 
         <!-- Main Content -->
         <main class="max-w-[1400px] mx-auto p-4 md:p-8">
+            
             <!-- View: Performance Summary -->
             <div id="performance-view" class="view-content space-y-6">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
@@ -71,8 +129,8 @@
                             <select id="perf-month-filter" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"></select>
                         </div>
                         <div class="flex-1 min-w-[200px] space-y-2">
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ABM</label>
-                            <select id="perf-abm-filter" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"></select>
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ABM (Locked for Users)</label>
+                            <select id="perf-abm-filter" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none disabled:opacity-60 disabled:cursor-not-allowed"></select>
                         </div>
                         <div class="flex-1 min-w-[200px] space-y-2">
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SKU Category</label>
@@ -84,27 +142,29 @@
                     </div>
                 </div>
 
+                <!-- KPI Cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="bg-indigo-600 p-6 rounded-2xl text-white shadow-lg shadow-indigo-100">
+                    <div class="bg-indigo-600 p-6 rounded-2xl text-white shadow-lg shadow-indigo-100/50">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Total GMV</p>
                         <p id="stat-gmv" class="text-2xl font-black">₹0L</p>
                     </div>
-                    <div class="bg-emerald-600 p-6 rounded-2xl text-white shadow-lg shadow-emerald-100">
+                    <div class="bg-emerald-600 p-6 rounded-2xl text-white shadow-lg shadow-emerald-100/50">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Total Margin</p>
                         <p id="stat-margin" class="text-2xl font-black">₹0L</p>
                     </div>
-                    <div class="bg-purple-600 p-6 rounded-2xl text-white shadow-lg shadow-purple-100">
+                    <div class="bg-purple-600 p-6 rounded-2xl text-white shadow-lg shadow-purple-100/50">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Margin %</p>
                         <p id="stat-perc" class="text-2xl font-black">0%</p>
                     </div>
-                    <div class="bg-slate-800 p-6 rounded-2xl text-white shadow-lg shadow-slate-200">
+                    <div class="bg-slate-800 p-6 rounded-2xl text-white shadow-lg shadow-slate-200/50">
                         <p class="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Closed Trades</p>
                         <p id="stat-closed" class="text-2xl font-black">0</p>
                     </div>
                 </div>
 
+                <!-- Summary Data Table -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="overflow-x-auto">
+                    <div class="overflow-x-auto font-sans">
                         <table class="w-full text-left border-collapse">
                             <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
                                 <tr>
@@ -134,7 +194,7 @@
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Supply Owner</label>
-                            <select id="ledger-abm-filter" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"></select>
+                            <select id="ledger-abm-filter" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none disabled:opacity-60 disabled:cursor-not-allowed"></select>
                         </div>
                         <div class="space-y-2">
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Global Search</label>
@@ -190,7 +250,7 @@
             </div>
         </main>
 
-        <!-- DrillDown Side Panel -->
+        <!-- DrillDown Side Panel Drawer -->
         <div id="drill-down-overlay" class="fixed inset-0 z-[100] flex justify-end bg-slate-900/40 backdrop-blur-sm hidden">
             <div id="drill-down-panel" class="w-full max-w-6xl bg-white h-full shadow-2xl flex flex-col slide-in">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
@@ -232,12 +292,93 @@
             "Abhishek Tiwari", "Sudhir KumarPavan", "Nagendra", "Sachin", "Nanda Kishore", "Central"
         ];
 
-        // --- STATE ---
+        // --- AUTHENTICATION DIRECTORY (EXTRACTED FROM image_c26180.png) ---
+        const USER_ACCOUNTS = {
+            // ADMIN ACCOUNTS (all global data access allowed)
+            "hari.krishnan@ninjacart.com": { role: "admin", name: "Hari Krishnan", filterLock: null, passcode: "hari123" },
+            "dinesh.n@ninjacart.com": { role: "admin", name: "Dinesh N", filterLock: null, passcode: "dinesh123" },
+            "nagendrakumaryadav@ninjacart.com": { role: "admin", name: "Nagendra Kumar Yadav", filterLock: null, passcode: "nagendrakumaryadav123" },
+            "sachinsarje@ninjacart.com": { role: "admin", name: "Sachin Sarje", filterLock: null, passcode: "sachinsarje123" },
+            "mahesh.tj@ninjacart.com": { role: "admin", name: "Mahesh T J", filterLock: null, passcode: "mahesh123" },
+            "vkumar@ninjacart.com": { role: "admin", name: "V Kumar", filterLock: null, passcode: "vkumar123" },
+            "b.kishore@ninjacart.com": { role: "admin", name: "B Kishore", filterLock: null, passcode: "b123" },
+            "deepakva@ninjacart.com": { role: "admin", name: "Deepak V A", filterLock: null, passcode: "deepakva123" },
+            "thirumugamg@ninjacart.com": { role: "admin", name: "Thirumugam G", filterLock: null, passcode: "thirumugamg123" },
+
+            // USER ACCOUNTS (Restricted & Locked to specific ABM Data Mapped Names)
+            "jitendrajat@ninjacart.com": { role: "user", name: "Jitendra", filterLock: "Jitendra", passcode: "jitendrajat123" },
+            "abhinpatel@ninjacart.com": { role: "user", name: "Abhin Patel", filterLock: "Abhin Anilkumar Patel", passcode: "abhinpatel123" },
+            "akshaykushare@ninjacart.com": { role: "user", name: "Akshay Kushare", filterLock: "Akshay Rajaram Kushare", passcode: "akshaykushare123" },
+            "balulaxmandhamane@ninjacart.com": { role: "user", name: "Balu Laxmandhamane", filterLock: "Balu Laxmandhamane", passcode: "balulaxmandhamane123" },
+            "nitinvalmik@ninjacart.com": { role: "user", name: "Nitin Valmik", filterLock: "Nitin Valmik Date", passcode: "nitinvalmik123" },
+            "sudhir_kumar@ninjacart.com": { role: "user", name: "Sudhir Kumar", filterLock: "Sudhir KumarPavan", passcode: "sudhir_kumar123" },
+            "pavanbiradar@ninjacart.com": { role: "user", name: "Pavan Biradar", filterLock: "Sudhir KumarPavan", passcode: "pavanbiradar123" },
+            "vikrantgaikwad@ninjacart.com": { role: "user", name: "Vikrant Gaikwad", filterLock: "Vikrant", passcode: "vikrantgaikwad123" },
+            "vishalnikam@ninjacart.com": { role: "user", name: "Vishal Nikam", filterLock: "Vishal", passcode: "vishalnikam123" },
+            "manikandankandasamy872@ninjacart.com": { role: "user", name: "Manikandan", filterLock: "Manikandan", passcode: "manikandankandasamy872123" },
+            "ishwarthorat@ninjacart.com": { role: "user", name: "Ishwar", filterLock: "Ishwar", passcode: "ishwarthorat123" },
+            "palakchouhan@ninjacart.com": { role: "user", name: "Palak Chouhan", filterLock: "Palak Chouhan", passcode: "palakchouhan123" },
+            "vinodtanwar@ninjacart.com": { role: "user", name: "Vinod", filterLock: "Vinod", passcode: "vinodtanwar123" },
+            "omkarrawade@ninjacart.com": { role: "user", name: "Omkar", filterLock: "Omkar", passcode: "omkarrawade123" },
+            "abbas.manthiri@ninjacart.com": { role: "user", name: "Abbas", filterLock: "Abbas", passcode: "abbas123" }
+        };
+
+        let currentUser = null;
+
+        const checkAuth = () => {
+            const savedUser = localStorage.getItem('opshub_session');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                applyUserAccess();
+            } else {
+                showAuthGate();
+            }
+        };
+
+        const showAuthGate = () => {
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+        };
+
+        const hideAuthGate = () => {
+            document.getElementById('auth-gate').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        const applyUserAccess = () => {
+            hideAuthGate();
+            
+            // Render Profile Header Badge and Details
+            const tag = document.getElementById('user-role-tag');
+            if (currentUser.role === 'admin') {
+                tag.innerText = `Admin: ${currentUser.name}`;
+                tag.className = "text-[9px] font-black text-indigo-600 uppercase tracking-widest block -mt-1 font-mono bg-indigo-50 px-2 py-0.5 rounded";
+                
+                // Enable global controls
+                document.getElementById('perf-abm-filter').disabled = false;
+                document.getElementById('ledger-abm-filter').disabled = false;
+            } else {
+                tag.innerText = `User (Restricted): ${currentUser.name}`;
+                tag.className = "text-[9px] font-black text-emerald-600 uppercase tracking-widest block -mt-1 font-mono bg-emerald-50 px-2 py-0.5 rounded";
+                
+                // Lock global filters to specific assigned profile for standard users
+                document.getElementById('perf-abm-filter').disabled = true;
+                document.getElementById('ledger-abm-filter').disabled = true;
+            }
+            
+            // Reinitialize view elements and trigger calculations
+            updateFilters();
+            renderPerformance();
+            renderLedger();
+        };
+
+        // --- GLOBAL STATE CONTROLLERS ---
         let appData = [];
         let paymentsMap = {};
         let activeTab = 'performance';
 
-        // --- UTILS ---
+        // --- STREAMING_CHUNK: Defining CSV Parsing and Math Utilities ---
         const parseVal = (v) => {
             if (v === null || v === undefined) return 0;
             const strValue = String(v);
@@ -284,7 +425,6 @@
                 headers.forEach((h, i) => {
                     const val = (values[i] || '').replace(/^"|"$/g, '');
                     obj[h] = val;
-                    // React logic equivalents for mapping specific columns
                     if (i === 32) obj['PO'] = val;
                     if (i === 11) obj['Buyer Name'] = val;
                     if (i === 14) obj['sellerName'] = val;
@@ -302,26 +442,32 @@
             });
         };
 
-        // --- RENDERING ENGINE ---
-
+        // --- STREAMING_CHUNK: Building Dynamic Summary Table with Filters ---
         const updateFilters = () => {
             const months = [...new Set(appData.map(r => r['GMV Month']))].filter(Boolean).sort();
-            const abms = [...new Set(appData.map(r => r['Supply Owner_2']))].filter(Boolean).sort(sortABMs);
             const categories = [...new Set(appData.map(r => r['SKU Category']))].filter(Boolean).sort();
 
             const createOpts = (arr, label) => `<option value="">All ${label}</option>` + arr.map(a => `<option value="${a}">${a}</option>`).join('');
 
             document.getElementById('perf-month-filter').innerHTML = createOpts(months, 'Months');
-            document.getElementById('perf-abm-filter').innerHTML = createOpts(abms, 'ABMs');
             document.getElementById('perf-cat-filter').innerHTML = createOpts(categories, 'Categories');
-
             document.getElementById('ledger-month-filter').innerHTML = createOpts(months, 'Months');
-            document.getElementById('ledger-abm-filter').innerHTML = createOpts(abms, 'ABMs');
+
+            // Handle dropdown construction according to access tier
+            if (currentUser && currentUser.role === 'user') {
+                const lockedAbm = currentUser.filterLock;
+                document.getElementById('perf-abm-filter').innerHTML = `<option value="${lockedAbm}">${lockedAbm}</option>`;
+                document.getElementById('ledger-abm-filter').innerHTML = `<option value="${lockedAbm}">${lockedAbm}</option>`;
+            } else {
+                const abms = [...new Set(appData.map(r => r['Supply Owner_2']))].filter(Boolean).sort(sortABMs);
+                document.getElementById('perf-abm-filter').innerHTML = createOpts(abms, 'ABMs');
+                document.getElementById('ledger-abm-filter').innerHTML = createOpts(abms, 'ABMs');
+            }
         };
 
         const renderPerformance = () => {
             const mFilter = document.getElementById('perf-month-filter').value;
-            const aFilter = document.getElementById('perf-abm-filter').value;
+            const aFilter = currentUser && currentUser.role === 'user' ? currentUser.filterLock : document.getElementById('perf-abm-filter').value;
             const cFilter = document.getElementById('perf-cat-filter').value;
 
             const filtered = appData.filter(r => {
@@ -332,7 +478,6 @@
 
             const summary = filtered.reduce((acc, r) => {
                 const status = (r['Trade Status'] || '').toLowerCase().trim();
-                const periodType = getTradePeriodType(r['GMV Month'], r['Trade Month'], mFilter);
                 if (status === 'open') acc.open++;
                 if (status === 'closed') {
                     acc.closed++;
@@ -342,13 +487,13 @@
                 return acc;
             }, { gmv: 0, margin: 0, closed: 0, open: 0 });
 
-            // UI Stats Update
+            // Core KPIs Update
             document.getElementById('stat-gmv').innerText = `₹${(summary.gmv / 100000).toFixed(2)}L`;
             document.getElementById('stat-margin').innerText = `₹${(summary.margin / 100000).toFixed(2)}L`;
             document.getElementById('stat-perc').innerText = `${summary.gmv > 0 ? ((summary.margin / summary.gmv) * 100).toFixed(1) : '0'}%`;
             document.getElementById('stat-closed').innerText = summary.closed;
 
-            // Table Grouping
+            // Group Metrics by category keys
             const map = {};
             filtered.forEach(r => {
                 const key = `${r['Supply Owner_2']}||${r['SKU Category']}`;
@@ -375,22 +520,22 @@
                     <td class="px-6 py-4 font-bold text-slate-700">${row.abm}</td>
                     <td class="px-6 py-4 text-slate-500 font-medium">${row.category}</td>
                     <td class="px-6 py-4 text-center">
-                        <button onclick="openDrillDown('${row.abm} - CF', ${idx}, 'cf')" class="font-mono font-bold w-full p-2 rounded-lg transition-colors ${row.cfItems.length > 0 ? 'text-rose-600 hover:bg-rose-100' : 'text-slate-200 disabled cursor-default'}">
+                        <button onclick="openDrillDown('${row.abm} - CF', ${idx}, 'cf')" class="font-mono font-bold w-full p-2 rounded-lg transition-all ${row.cfItems.length > 0 ? 'text-rose-600 hover:bg-rose-100 hover:scale-[1.05]' : 'text-slate-200 disabled cursor-default'}">
                             ${row.cfItems.length}
                         </button>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <button onclick="openDrillDown('${row.abm} - Exec', ${idx}, 'exec')" class="font-mono font-bold w-full p-2 rounded-lg transition-colors ${row.execItems.length > 0 ? 'text-emerald-600 hover:bg-emerald-100' : 'text-slate-200 disabled cursor-default'}">
+                        <button onclick="openDrillDown('${row.abm} - Exec', ${idx}, 'exec')" class="font-mono font-bold w-full p-2 rounded-lg transition-all ${row.execItems.length > 0 ? 'text-emerald-600 hover:bg-emerald-100 hover:scale-[1.05]' : 'text-slate-200 disabled cursor-default'}">
                             ${row.execItems.length}
                         </button>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <button onclick="openDrillDown('${row.abm} - Open', ${idx}, 'open')" class="font-mono font-bold w-full p-2 rounded-lg transition-colors ${row.openItems.length > 0 ? 'text-amber-600 hover:bg-amber-100' : 'text-slate-200 disabled cursor-default'}">
+                        <button onclick="openDrillDown('${row.abm} - Open', ${idx}, 'open')" class="font-mono font-bold w-full p-2 rounded-lg transition-all ${row.openItems.length > 0 ? 'text-amber-600 hover:bg-amber-100 hover:scale-[1.05]' : 'text-slate-200 disabled cursor-default'}">
                             ${row.openItems.length}
                         </button>
                     </td>
                     <td class="px-6 py-4 text-center">
-                        <button onclick="openDrillDown('${row.abm} - Closed', ${idx}, 'closed')" class="font-mono font-bold w-full p-2 rounded-lg transition-colors ${row.closedItems.length > 0 ? 'text-indigo-600 hover:bg-indigo-100' : 'text-slate-200 disabled cursor-default'}">
+                        <button onclick="openDrillDown('${row.abm} - Closed', ${idx}, 'closed')" class="font-mono font-bold w-full p-2 rounded-lg transition-all ${row.closedItems.length > 0 ? 'text-indigo-600 hover:bg-indigo-100 hover:scale-[1.05]' : 'text-slate-200 disabled cursor-default'}">
                             ${row.closedItems.length}
                         </button>
                     </td>
@@ -399,13 +544,12 @@
                 </tr>
             `).join('');
 
-            // Global store for drilldowns in this render context
             window.perfRows = rows;
         };
 
         const renderLedger = () => {
             const mFilter = document.getElementById('ledger-month-filter').value;
-            const aFilter = document.getElementById('ledger-abm-filter').value;
+            const aFilter = currentUser && currentUser.role === 'user' ? currentUser.filterLock : document.getElementById('ledger-abm-filter').value;
             const search = document.getElementById('ledger-search').value.toLowerCase();
 
             const filtered = appData.filter(r => {
@@ -442,7 +586,7 @@
             }).join('');
         };
 
-        // --- DRILL DOWN HANDLER ---
+        // --- SUB-DATA DRILL DOWN CONTROL ---
         window.openDrillDown = (title, rowIndex, listKey) => {
             const dataRow = window.perfRows[rowIndex];
             const trades = dataRow[listKey + 'Items'];
@@ -497,14 +641,49 @@
             if (tabId === 'trades') renderLedger();
         };
 
-        // --- INITIALIZATION ---
+        // --- STREAMING_CHUNK: Initializing Interactive Event Listeners and Security Controllers ---
+        // --- SYSTEM INITIALIZATION ---
         window.addEventListener('DOMContentLoaded', async () => {
+            checkAuth();
+
+            // Handle login logic using the official Ninjacart account dictionary (mapped from image)
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const emailInput = document.getElementById('login-username').value.trim().toLowerCase();
+                const passwordInput = document.getElementById('login-password').value.trim();
+
+                const account = USER_ACCOUNTS[emailInput];
+                
+                if (account && passwordInput === account.passcode) {
+                    // Successful login sequence
+                    document.getElementById('auth-error').classList.add('hidden');
+                    currentUser = account;
+                    localStorage.setItem('opshub_session', JSON.stringify(account));
+                    applyUserAccess();
+                } else {
+                    // Show error state banner
+                    const err = document.getElementById('auth-error');
+                    err.innerText = "Access denied: Invalid credentials or incorrect passcode.";
+                    err.classList.remove('hidden');
+                }
+            });
+
+            // Handle Session Logout sequence
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                localStorage.removeItem('opshub_session');
+                currentUser = null;
+                document.getElementById('login-username').value = "";
+                document.getElementById('login-password').value = "";
+                document.getElementById('auth-error').classList.add('hidden');
+                showAuthGate();
+            });
+
             try {
                 const response = await fetch(CSV_URL);
                 const csvText = await response.text();
                 appData = parseCSV(csvText);
 
-                // Build payment map (VLOOKUP Logic)
+                // Build aggregate payment ledger entries (VLOOKUP mechanism)
                 appData.forEach(item => {
                     const poId = String(item['PO/SO ID'] || '').trim();
                     const amt = parseVal(item['Payment_Amount']);
@@ -514,30 +693,37 @@
                 });
 
                 updateFilters();
-                switchTab('performance');
+                if (currentUser) {
+                    switchTab('performance');
+                }
                 
-                // Event Listeners for Filters
+                // Hide splash loader
+                document.getElementById('loading-screen').classList.add('hidden');
+
+                // Filter Change Listeners
                 ['perf-month-filter', 'perf-abm-filter', 'perf-cat-filter'].forEach(id => {
                     document.getElementById(id).addEventListener('change', renderPerformance);
                 });
+                
                 document.getElementById('perf-reset').addEventListener('click', () => {
                     document.getElementById('perf-month-filter').value = "";
-                    document.getElementById('perf-abm-filter').value = "";
+                    if (currentUser && currentUser.role === 'admin') {
+                        document.getElementById('perf-abm-filter').value = "";
+                    }
                     document.getElementById('perf-cat-filter').value = "";
                     renderPerformance();
                 });
 
-                ['ledger-month-filter', 'ledger-abm-filter'].forEach(id => {
-                    document.getElementById(id).addEventListener('change', renderLedger);
-                });
+                document.getElementById('ledger-month-filter').addEventListener('change', renderLedger);
+                document.getElementById('ledger-abm-filter').addEventListener('change', renderLedger);
                 document.getElementById('ledger-search').addEventListener('input', renderLedger);
 
-                // Tab buttons
+                // Initialize Tabs
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
                 });
 
-                // Close Overlay
+                // Drawer controls
                 document.getElementById('close-drill-down').addEventListener('click', () => {
                     document.getElementById('drill-down-overlay').classList.add('hidden');
                 });
@@ -547,61 +733,85 @@
                     }
                 });
 
-                // Payout Search
+                // Payout Query Logic
                 document.getElementById('payout-form').addEventListener('submit', (e) => {
                     e.preventDefault();
-                    const query = document.getElementById('payout-search-input').value.trim();
-                    const resultsBox = document.getElementById('payout-results');
-                    resultsBox.classList.remove('hidden');
+                    const queryPO = document.getElementById('payout-search-input').value.trim();
+                    const resultsWrap = document.getElementById('payout-results');
+                    if (!queryPO) return;
 
-                    if (!query) return;
+                    const matchedRecords = appData.filter(r => String(r['PO'] || '').trim() === queryPO);
+                    if (matchedRecords.length === 0) {
+                        resultsWrap.innerHTML = `
+                            <div class="bg-slate-50 p-6 rounded-2xl text-center text-slate-400 font-bold border border-slate-200">
+                                <i data-lucide="alert-circle" class="w-12 h-12 mx-auto text-slate-300 mb-2"></i>
+                                No active payment records found for PO #${queryPO}
+                            </div>
+                        `;
+                        resultsWrap.classList.remove('hidden');
+                        lucide.createIcons();
+                        return;
+                    }
 
-                    const master = appData.find(i => String(i['PO'] || '').trim() === query);
-                    const supplier = master ? (master['sellerName'] || 'Not Found') : 'Not Found';
-                    const entries = appData.filter(i => String(i['PO/SO ID'] || '').trim() === query && parseVal(i['Payment_Amount']) > 0);
+                    // Enforce user isolation: Verify queried record matches restricted filter lock if user is not admin
+                    const isAuthorized = currentUser.role === 'admin' || matchedRecords.every(m => m['Supply Owner_2'] === currentUser.filterLock);
+                    if (!isAuthorized) {
+                        resultsWrap.innerHTML = `
+                            <div class="bg-rose-50 p-6 rounded-2xl text-center text-rose-600 font-bold border border-rose-100">
+                                <i data-lucide="shield-alert" class="w-12 h-12 mx-auto text-rose-500 mb-2"></i>
+                                Access Denied: You do not have permissions to query PO #${queryPO}
+                            </div>
+                        `;
+                        resultsWrap.classList.remove('hidden');
+                        lucide.createIcons();
+                        return;
+                    }
 
-                    resultsBox.innerHTML = `
-                        <div class="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl flex justify-between items-center">
-                            <div class="flex items-center gap-4">
-                                <div class="bg-white p-3 rounded-xl shadow-sm text-indigo-600"><i data-lucide="user" class="w-6 h-6"></i></div>
-                                <div>
-                                    <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Mapped Supplier</p>
-                                    <p class="text-xl font-black text-slate-800">${supplier}</p>
+                    // Render payment details for authorized queries
+                    let detailsHtml = matchedRecords.map(m => {
+                        const paid = paymentsMap[String(m['PO'] || '').trim()] || 0;
+                        const status = (m['Trade Status'] || '').toLowerCase() === 'closed';
+                        return `
+                            <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 space-y-4">
+                                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div>
+                                        <p class="text-[10px] font-black uppercase text-indigo-600 tracking-wider">Transaction Info</p>
+                                        <h4 class="text-lg font-black text-slate-800">PO #${m['PO']}</h4>
+                                        <p class="text-xs text-slate-400 font-bold">ABM: ${m['Supply Owner_2']}</p>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-xs font-black uppercase ${status ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                                        Status: ${m['Trade Status']}
+                                    </span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase text-slate-400">Buyer Name</p>
+                                        <p class="text-sm font-bold text-slate-700 truncate max-w-[200px]" title="${m['Buyer Name']}">${m['Buyer Name']}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase text-slate-400">Seller Name</p>
+                                        <p class="text-sm font-bold text-slate-700 truncate max-w-[200px]" title="${m['sellerName']}">${m['sellerName']}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase text-slate-400">Total Purchase</p>
+                                        <p class="text-sm font-black text-slate-800">₹${parseVal(m['Seller Payable(1% - not for all cases)']).toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold uppercase text-indigo-500">Paid Amount</p>
+                                        <p class="text-sm font-black text-indigo-600">₹${paid.toLocaleString()}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        ${entries.length > 0 ? `
-                            <div class="grid grid-cols-1 gap-4">
-                                ${entries.map(e => `
-                                    <div class="bg-white border border-slate-200 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-3 gap-6 shadow-sm">
-                                        <div>
-                                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</label>
-                                            <p class="text-2xl font-black text-emerald-600">₹${parseVal(e['Payment_Amount']).toLocaleString()}</p>
-                                        </div>
-                                        <div>
-                                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</label>
-                                            <p class="text-base font-bold text-slate-700">${e['Payment_Date'] || 'N/A'}</p>
-                                        </div>
-                                        <div class="overflow-hidden">
-                                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">UTR</label>
-                                            <p class="text-xs font-mono font-bold text-slate-500 truncate">${e['UTR_Number'] || 'N/A'}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : `
-                            <div class="p-8 bg-amber-50 rounded-2xl text-center font-bold text-amber-700">No payment records found.</div>
-                        `}
-                    `;
+                        `;
+                    }).join('');
+
+                    resultsWrap.innerHTML = detailsHtml;
+                    resultsWrap.classList.remove('hidden');
                     lucide.createIcons();
                 });
 
-                document.getElementById('loading-screen').classList.add('hidden');
-                lucide.createIcons();
-
             } catch (err) {
-                console.error(err);
-                document.getElementById('loading-screen').innerHTML = `<p class="text-rose-500 font-bold">Failed to load data. Please check connection.</p>`;
+                console.error("Dashboard failed to initialize completely:", err);
             }
         });
     </script>
